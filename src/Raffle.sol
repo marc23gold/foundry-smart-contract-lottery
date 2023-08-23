@@ -23,6 +23,10 @@ contract Raffle is VRFConsumerBaseV2 {
     uint16 private constant REQUEST_CONFIRMATIONS = 3;
     uint32 private constant NUMWORDS = 1; //number of random words to return
     address private s_recentWinner;
+    enum State {
+        Open,
+        Closed
+    }
 
     uint256 private immutable i_entranceFee;
     address payable[] private s_players;
