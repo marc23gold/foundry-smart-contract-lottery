@@ -11,22 +11,25 @@ pragma solidity ^0.8.19;
  */
 
 import {VRFCoordinatorV2Interface} from "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
+import {VRFConsumerBaseV2} from "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 
 
-contract Raffle {
+contract Raffle is VRFConsumerBaseV2 {
     error Raffle__NotEnoughEthToEnterRaffle();
     error Raffle__NotEnoughTimePassed();
+    error Raffle__NotPayed();
 
     //state variables
-    uint256 private constant REQUEST_CONFIRMATIONS = 3;
-    uint256 private constant NUMWORDS = 1; //number of random words to return
+    uint16 private constant REQUEST_CONFIRMATIONS = 3;
+    uint32 private constant NUMWORDS = 1; //number of random words to return
+    address private s_recentWinner;
 
     uint256 private immutable i_entranceFee;
     address payable[] private s_players;
     /**@dev duration of the lottery in seconds */
     uint256 private immutable i_interval;
     uint256 private s_lastTimeStamp;
-    address private immutable i_COORDINATOR;
+    VRFCoordinatorV2Interface private immutable i_COORDINATOR;
     bytes32 private immutable i_keyHash;
     uint64 private immutable i_subscriptionId;
     uint32 private immutable i_callbackGasLimit;
@@ -41,11 +44,12 @@ contract Raffle {
     //3. get balance
 
     //Constructor
-    constructor(uint256 entranceFee, uint256 interval, address coordinator, bytes32 keyHash, uint64 subscriptionId, uint32 callbackGasLimit) {
+    constructor (uint256 entranceFee, uint256 interval, address coordinator, bytes32 keyHash, uint64 subscriptionId, uint32 callbackGasLimit)
+    VRFConsumerBaseV2(coordinator) {    
         i_entranceFee = entranceFee;
         i_interval = interval;
         s_lastTimeStamp = block.timestamp;
-        i_COORDINATOR = coordinator;
+        i_COORDINATOR = VRFCoordinatorV2Interface(coordinator);
         i_keyHash = keyHash;
         i_subscriptionId = subscriptionId;
         i_callbackGasLimit = callbackGasLimit;
@@ -75,6 +79,17 @@ contract Raffle {
             i_callbackGasLimit,
             NUMWORDS
         );
+    }
+
+    function fulfillRandomWords(uint256 requestId,
+    uint256[] memory randomWords) internal override {
+        uint256 indexOfWinner =(randomWords[0]) % (s_players.length);
+        address payable winner = s_players[indexOfWinner];
+        s_recentWinner = winner;
+        (bool success, ) = winner.call{value: address(this).balance}("");
+        if(!success) {
+            revert Raffle__NotPayed();
+        }
     }
 
     //View/Pure Getter Functions
