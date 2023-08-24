@@ -57,7 +57,12 @@ contract Raffle is VRFConsumerBaseV2{
     //3. get balance
 
     //Constructor
-    constructor (uint256 entranceFee, uint256 interval, address coordinator, bytes32 keyHash, uint64 subscriptionId, uint32 callbackGasLimit)
+    constructor (uint256 entranceFee,
+     uint256 interval,
+      address coordinator,
+       bytes32 keyHash,
+        uint64 subscriptionId,
+         uint32 callbackGasLimit)
     VRFConsumerBaseV2(coordinator) {    
         i_entranceFee = entranceFee;
         i_interval = interval;
