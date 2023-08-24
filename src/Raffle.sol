@@ -79,19 +79,31 @@ contract Raffle is VRFConsumerBaseV2{
         emit EnteredRaffle(msg.sender);
     }
 
+    /**
+     * @dev Function that the chainlink automation nodes call   
+     * to see if it's time to perform an upkeep. 
+     */
     function checkUpKeep(bytes memory /*checkData*/)
     public
     view
-    returns(bool upKeepNeeded, bytes memory /*performData*/) {}
+    returns(bool upKeepNeeded, bytes memory /*performData*/) {
+        bool timeHasPassed = ((block.timestamp - s_lastTimeStamp) >= i_interval);
+        bool isOpen =   (Raffle.State.Open == s_raffleState);
+        bool hasBalance = address(this).balance > 0;
+        bool hasPlayers = s_players.length > 0;
+        upKeepNeeded = timeHasPassed && isOpen && hasBalance && hasPlayers;
+        return (upKeepNeeded, "0x0");
+    }
 
 
     //get random number 
     //use random number to get a winner
     //be automatically called   
-    function pickWinner() external {
-        if((block.timestamp - s_lastTimeStamp) <= i_interval) {
+    function performUpKeep(bytes calldata /*performData*/) external {
+        (bool upKeepNeeded,) = checkUpKeep("");  
+        if(!upKeepNeeded) {
             revert Raffle__NotEnoughTimePassed();
-        }
+            }  
         s_raffleState = State.Closed;
         /**@dev get random number */
            uint256 requestId = i_COORDINATOR.requestRandomWords(
