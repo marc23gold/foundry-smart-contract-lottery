@@ -12,21 +12,27 @@ pragma solidity ^0.8.19;
 
 import {VRFCoordinatorV2Interface} from "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import {VRFConsumerBaseV2} from "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
+//import {AutomationCompatible} from "@chainlink/contracts/src/v0.8/AutomationCompatible.sol";
 
 
-contract Raffle is VRFConsumerBaseV2 {
+contract Raffle is VRFConsumerBaseV2{
     error Raffle__NotEnoughEthToEnterRaffle();
     error Raffle__NotEnoughTimePassed();
     error Raffle__NotPayed();
+    error Raffle__RaffleNotOpen();
 
-    //state variables
-    uint16 private constant REQUEST_CONFIRMATIONS = 3;
-    uint32 private constant NUMWORDS = 1; //number of random words to return
-    address private s_recentWinner;
+    //Types
     enum State {
         Open,
         Closed
     }
+
+    //state variables
+    State private s_raffleState;
+    uint16 private constant REQUEST_CONFIRMATIONS = 3;
+    uint32 private constant NUMWORDS = 1; //number of random words to return
+    address private s_recentWinner;
+  
 
     uint256 private immutable i_entranceFee;
     address payable[] private s_players;
@@ -41,6 +47,9 @@ contract Raffle is VRFConsumerBaseV2 {
 
     event EnteredRaffle(
         address indexed player
+    );
+    event WinnerPicked(
+        address indexed winner
     );
     //what are some functions we need?
     //1. buy tickets
@@ -63,9 +72,17 @@ contract Raffle is VRFConsumerBaseV2 {
         if(msg.value < i_entranceFee) {
             revert Raffle__NotEnoughEthToEnterRaffle();
         }
+        if(s_raffleState != State.Open) {
+            revert Raffle__RaffleNotOpen();
+        }
         s_players.push(payable(msg.sender));
         emit EnteredRaffle(msg.sender);
     }
+
+    function checkUpKeep(bytes memory /*checkData*/)
+    public
+    view
+    returns(bool upKeepNeeded, bytes memory /*performData*/) {}
 
 
     //get random number 
@@ -75,6 +92,7 @@ contract Raffle is VRFConsumerBaseV2 {
         if((block.timestamp - s_lastTimeStamp) <= i_interval) {
             revert Raffle__NotEnoughTimePassed();
         }
+        s_raffleState = State.Closed;
         /**@dev get random number */
            uint256 requestId = i_COORDINATOR.requestRandomWords(
             i_keyHash,
@@ -90,10 +108,16 @@ contract Raffle is VRFConsumerBaseV2 {
         uint256 indexOfWinner =(randomWords[0]) % (s_players.length);
         address payable winner = s_players[indexOfWinner];
         s_recentWinner = winner;
+        s_raffleState = State.Open;
+
+        s_players = new address payable[](0); //resetting the players array
+        s_lastTimeStamp = block.timestamp;
         (bool success, ) = winner.call{value: address(this).balance}("");
         if(!success) {
             revert Raffle__NotPayed();
         }
+
+        emit WinnerPicked(winner);
     }
 
     //View/Pure Getter Functions
