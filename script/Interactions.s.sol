@@ -5,6 +5,7 @@ pragma solidity ^0.8.19;
 import {Script, console} from "forge-std/Script.sol";
 import {HelperConfig} from "./HelperConfig.s.sol";
 import {VRFCoordinatorV2Mock} from "../lib/chainlink-brownie-contracts/contracts/src/v0.8/mocks/VRFCoordinatorV2Mock.sol";
+import {LinkToken} from "../test/mocks/LinkToken.sol";
 
 contract CreateSubscription is Script{
 
@@ -15,6 +16,8 @@ contract CreateSubscription is Script{
         address coordinator,
          ,
          ,
+         ,
+         address link
          ) = helperConfig.activeNetworkConfig();
          return createSubscription(coordinator);
     }
@@ -46,8 +49,26 @@ contract FundSubscription is Script {
          ,
          uint64 subscriptionId
          ,
+         ,
+         address link 
          ) = helperConfig.activeNetworkConfig();
          
+    }
+
+    function fundSubscription(address coordinator, uint64 subscriptionId, address link) public {
+        console.log("Funding subscription on chain id: %s", block.chainid);
+        if(block.chainId == 31337) {
+            vm.startBroadcast();
+            VRFCoordinatorV2Mock(coordinator).fundSubscription(subscriptionId,FUND_AMOUNT, link);
+            vm.stopBroadcast();
+        } else {
+            vm.startBroadcast();
+            vm.stopBroadcast();     
+        }
+        vm.startBroadcast();
+        Coordinator(coordinator).fundSubscription(subscriptionId, FUND_AMOUNT, link);
+        vm.stopBroadcast();
+        console.log("Funded subscription id: %s", subscriptionId);
     }
 
     function run() external {

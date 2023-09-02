@@ -15,7 +15,8 @@ contract DeployRaffle is Script {
         address coordinator,
         bytes32 keyHash,
         uint64 subscriptionId,
-        uint32 callbackGasLimit) = helperConfig.activeNetworkConfig();
+        uint32 callbackGasLimit,
+        address link) = helperConfig.activeNetworkConfig();
 
         if (subscriptionId == 0) {
             // we are going to need to create a subscription
