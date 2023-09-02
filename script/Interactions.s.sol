@@ -6,6 +6,7 @@ import {Script, console} from "forge-std/Script.sol";
 import {HelperConfig} from "./HelperConfig.s.sol";
 import {VRFCoordinatorV2Mock} from "../lib/chainlink-brownie-contracts/contracts/src/v0.8/mocks/VRFCoordinatorV2Mock.sol";
 import {LinkToken} from "../test/mocks/LinkToken.sol";
+import {DevOpsTools} from "../lib/foundry-devops/src/DevOpsTools.sol";
 
 contract CreateSubscription is Script{
 
@@ -57,21 +58,51 @@ contract FundSubscription is Script {
 
     function fundSubscription(address coordinator, uint64 subscriptionId, address link) public {
         console.log("Funding subscription on chain id: %s", block.chainid);
-        if(block.chainId == 31337) {
+        if(block.chainid == 31337) {
             vm.startBroadcast();
-            VRFCoordinatorV2Mock(coordinator).fundSubscription(subscriptionId,FUND_AMOUNT, link);
+            VRFCoordinatorV2Mock(coordinator).fundSubscription(subscriptionId,FUND_AMOUNT);
             vm.stopBroadcast();
         } else {
             vm.startBroadcast();
+            LinkToken(link).transferAndCall(coordinator, FUND_AMOUNT, abi.encode(subscriptionId));
             vm.stopBroadcast();     
         }
         vm.startBroadcast();
-        Coordinator(coordinator).fundSubscription(subscriptionId, FUND_AMOUNT, link);
-        vm.stopBroadcast();
-        console.log("Funded subscription id: %s", subscriptionId);
     }
 
     function run() external {
         fundSubscriptionUsingConfig();
     }
+}
+
+contract AddConsumer is Script {
+
+    function addConsumer(address raffle, address coordinator, uint64 subscriptionId) public {
+        console.log("Adding consumer on chain id: %s", block.chainid);
+        vm.startBroadcast();
+        VRFCoordinatorV2Mock(coordinator).addConsumer(subscriptionId, raffle);
+        vm.stopBroadcast();
+    }
+
+    function addConsumerUsingConfig(address raffle) public {
+        HelperConfig helperConfig = new HelperConfig(); 
+        ( ,
+         ,
+        address coordinator,
+         ,
+         uint64 subscriptionId
+         ,
+         ,
+         address link 
+         ) = helperConfig.activeNetworkConfig();
+         addConsumer(raffle, coordinator, subscriptionId);
+    }
+
+    function run() external {
+        address raffle = DevOpsTools.get_most_recent_deployment(
+            "Raffle",
+            block.chainid
+        );
+        addConsumerUsingConfig(raffle);
+    }  
 }
