@@ -177,9 +177,9 @@ contract RaffleTest is Test {
     function testFufillRandomWordsCanOnlyBeCalledAfterPerformUpKeep(uint256 randomRequestId) public raffleEnteredAndTimePassed {
         //arrange
         vm.expectRevert("nonexistent request");
-        VRFCoordinatorV2Mock(coordinator).fulfillRandomWords(
-        randomRequestId, 
-        address(raffle));
+            VRFCoordinatorV2Mock(coordinator).fulfillRandomWords(
+            randomRequestId, 
+            address(raffle));
         //act
         
         //assert
@@ -187,9 +187,35 @@ contract RaffleTest is Test {
 
     function testFulfillRandomWordsPicksAWinnerResestsAndSendsMoney() raffleEnteredAndTimePassed public {
         //arrange
-         
+        uint256 additionalEntrants = 5;
+        uint256 startingIndex = 1;
+        for(uint256 i; i < (startingIndex + additionalEntrants); i++) {
+            address player = address(uint160(i)); //generates an address based off i
+            hoax(player, VALUE);
+            raffle.enterRaffle{value: entranceFee}(); 
+        }
+
+        uint256 prize = entranceFee * (additionalEntrants + 1);
+        //pretend to be chainlink VRF to get the random word
+        vm.recordLogs(); //gets log outputs 
+        raffle.performUpKeep("");
+        Vm.Log[] memory entries = vm.getRecordedLogs();
+        //get the log
+        bytes32 requestId = entries[1].topics[1];
+
+        uint256 previousTimeStamp = raffle.getLastTimestamp();
+
+        VRFCoordinatorV2Mock(coordinator).fulfillRandomWords(
+        uint256 (requestId), 
+        address(raffle));
         //act
-        //assert    
+        //assert
+        assert(uint256(raffle.getRaffleState()) == 0);
+        assert(raffle.getRecentWinner() != address(0));
+        assert(raffle.getLengthOfPlayersArray() == 0);
+        assert(raffle.getLastTimestamp() > previousTimeStamp);
+        assert(raffle.getRecentWinner().balance == VALUE + prize - entranceFee);
+
     }
 
 }
