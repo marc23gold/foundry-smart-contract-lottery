@@ -6,6 +6,7 @@ import {Test, console} from "forge-std/Test.sol";
 import {DeployRaffle} from "../../script/DeployRaffle.s.sol";
 import {Raffle} from "../../src/Raffle.sol";
 import {HelperConfig} from "../../script/HelperConfig.s.sol";
+import {Vm} from "forge-std/Vm.sol";
 
 contract RaffleTest is Test {
     /* Events */
@@ -124,10 +125,53 @@ contract RaffleTest is Test {
         assert(upKeepNeeded == false);
     }
 
+    //function testCheckUpKeepReturnsFalseIfEnoughTimeHasntPassed() public {}
+
+    //function testCheckUpKeepTrueWhenParametersAreMet() public {}
+
+    //perform upkeep
+    function testPerformUpKeepCanOnlyRunIfCheckUpKeepIsTrue() public {
+        //arrange
+        vm.prank(PLAYER); //pretending to be player
+        raffle.enterRaffle{value: 1 ether}();
+        vm.warp(block.timestamp + interval + 1);
+        vm.roll(block.number + 1);
+
+        //act/assert 
+        raffle.performUpKeep("");  
+    }
+
+    function testPerfromUpKeepRevertsIfCheckUpKeepIsFalse() public {
+        vm.expectRevert(Raffle.Raffle__NotEnoughTimePassed.selector);
+        raffle.enterRaffle{value: 1 ether}();
+    }
+
+    //what if I need to test using the output of an event
+
+    modifier raffleEnteredAndTimePassed {
+        vm.prank(PLAYER); //pretending to be player
+        raffle.enterRaffle{value: 1 ether}();
+        vm.warp(block.timestamp + interval + 1);
+        _;
+    }
+
+    function testPerformUpKeepUpdatesRaffleStateAndEmitsRequestId() public 
+    raffleEnteredAndTimePassed {
+        //arrange
+
+        //act
+        vm.recordLogs(); //gets log outputs 
+        raffle.performUpKeep("");
+        Vm.Log[] memory entries = vm.getRecordedLogs();
+
+        //assert
+    }
+
+}
 
  
 
 
 
 
-    }
+    

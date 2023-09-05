@@ -51,6 +51,7 @@ contract Raffle is VRFConsumerBaseV2{
     event WinnerPicked(
         address indexed winner
     );
+    event RequestedRaffleWinner(uint256 indexed requestId);
     //what are some functions we need?
     //1. buy tickets
     //2. pick winner
@@ -118,6 +119,7 @@ contract Raffle is VRFConsumerBaseV2{
             i_callbackGasLimit,
             NUMWORDS
         );
+        emit RequestedRaffleWinner(requestId);
     }
 
     function fulfillRandomWords(uint256 requestId,
