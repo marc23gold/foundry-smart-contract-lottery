@@ -22,7 +22,7 @@ contract DeployRaffle is Script {
         if (subscriptionId == 0) {
             // we are going to need to create a subscription
             CreateSubscription createSubscription = new CreateSubscription();
-            subscriptionId = createSubscription.createSubscription(coordinator);
+            subscriptionId = createSubscription.createSubscription(coordinator, deployerKey);
         }
 
         //fund subscription

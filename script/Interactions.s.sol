@@ -19,14 +19,14 @@ contract CreateSubscription is Script{
          ,
          ,
          address link,
-         
+         uint deployerKey
          ) = helperConfig.activeNetworkConfig();
-         return createSubscription(coordinator);
+         return createSubscription(coordinator,deployerKey);
     }
 
-    function createSubscription (address coordinator) public returns(uint64){
+    function createSubscription (address coordinator,uint deployerKey) public returns(uint64){
         console.log("Creating subscription on chain id: %s", block.chainid);
-        vm.startBroadcast();
+        vm.startBroadcast(deployerKey);
         uint64 subId = VRFCoordinatorV2Mock(coordinator).createSubscription();
         vm.stopBroadcast();
         console.log("Subscription id: %s", subId);

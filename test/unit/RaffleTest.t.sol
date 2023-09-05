@@ -25,7 +25,7 @@ contract RaffleTest is Test {
     address link;
 
     address public PLAYER = makeAddr("player");
-    uint256 public constant VALUE = 10 ether;
+    uint256 public constant VALUE = 0.1 ether;
     
     function setUp() external {
         DeployRaffle deployRaffle = new DeployRaffle();
@@ -175,7 +175,14 @@ contract RaffleTest is Test {
     }
 
     //fufill random words test
-    function testFufillRandomWordsCanOnlyBeCalledAfterPerformUpKeep(uint256 randomRequestId) public raffleEnteredAndTimePassed {
+
+    modifier skipFork {
+        if (block.chainid != 31337) {
+            return;
+        }
+        _;
+    }
+    function testFufillRandomWordsCanOnlyBeCalledAfterPerformUpKeep(uint256 randomRequestId) public raffleEnteredAndTimePassed skipFork{
         //arrange
         vm.expectRevert("nonexistent request");
             VRFCoordinatorV2Mock(coordinator).fulfillRandomWords(
@@ -186,7 +193,7 @@ contract RaffleTest is Test {
         //assert
     }
 
-    function testFulfillRandomWordsPicksAWinnerResestsAndSendsMoney() raffleEnteredAndTimePassed public {
+    function testFulfillRandomWordsPicksAWinnerResestsAndSendsMoney() raffleEnteredAndTimePassed skipFork public {
         //arrange
         uint256 additionalEntrants = 5;
         uint256 startingIndex = 1;
