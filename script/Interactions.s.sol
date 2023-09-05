@@ -18,7 +18,8 @@ contract CreateSubscription is Script{
          ,
          ,
          ,
-         address link
+         address link,
+         
          ) = helperConfig.activeNetworkConfig();
          return createSubscription(coordinator);
     }
@@ -51,7 +52,8 @@ contract FundSubscription is Script {
          uint64 subscriptionId
          ,
          ,
-         address link 
+         address link,
+
          ) = helperConfig.activeNetworkConfig();
          
     }
@@ -77,9 +79,9 @@ contract FundSubscription is Script {
 
 contract AddConsumer is Script {
 
-    function addConsumer(address raffle, address coordinator, uint64 subscriptionId, uint256 deployKey) public {
+    function addConsumer(address raffle, address coordinator, uint64 subscriptionId, uint256 deployerKey) public {
         console.log("Adding consumer on chain id: %s", block.chainid);
-        vm.startBroadcast();
+        vm.startBroadcast(deployerKey);
         VRFCoordinatorV2Mock(coordinator).addConsumer(subscriptionId, raffle);
         vm.stopBroadcast();
     }

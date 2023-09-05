@@ -36,7 +36,8 @@ contract RaffleTest is Test {
         keyHash,
         subscriptionId,
         callbackGasLimit,
-        link) = helperConfig.activeNetworkConfig();
+        link,
+        ) = helperConfig.activeNetworkConfig();
         vm.deal(PLAYER, VALUE);
     }
 
